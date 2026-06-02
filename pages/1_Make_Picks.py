@@ -1,5 +1,6 @@
 import streamlit as st
 
+from src.access import require_pool_access
 from src.branding import apply_branding, brand_header
 from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, GROUPS, POOL_NAME
 from src.database import all_teams, dark_horse_teams, get_database, load_teams_data
@@ -8,6 +9,7 @@ from src.validation import picks_are_locked, validate_picks
 
 st.set_page_config(page_title=f"Make Picks | {POOL_NAME}", page_icon="⚽", layout="wide")
 apply_branding()
+require_pool_access()
 
 if "display_name" not in st.session_state or not st.session_state.display_name:
     st.warning("Enter your name on the Home page first.")

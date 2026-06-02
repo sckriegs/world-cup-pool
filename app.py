@@ -5,6 +5,7 @@ import streamlit as st
 from src.branding import apply_branding, brand_header
 from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, POOL_NAME, PICK_DEADLINE, SCORING
 from src.database import get_database
+from src.secrets_helper import get_secret
 from src.validation import normalize_name, validate_name
 
 st.set_page_config(page_title=POOL_NAME, page_icon="⚽", layout="wide")
@@ -12,6 +13,21 @@ apply_branding()
 
 if "display_name" not in st.session_state:
     st.session_state.display_name = ""
+
+if "pool_unlocked" not in st.session_state:
+    st.session_state.pool_unlocked = False
+
+_pool_passcode = get_secret("POOL_PASSCODE")
+if _pool_passcode and not st.session_state.pool_unlocked:
+    brand_header(POOL_NAME, "Enter the office pool passcode to continue.")
+    pass_input = st.text_input("Pool passcode", type="password")
+    if st.button("Enter pool", type="primary"):
+        if pass_input == _pool_passcode:
+            st.session_state.pool_unlocked = True
+            st.rerun()
+        else:
+            st.error("Incorrect passcode.")
+    st.stop()
 
 
 def deadline_message() -> str:

@@ -42,6 +42,14 @@ DARK_HORSE_SEEDED_NOTE = (
 
 GROUPS = list("ABCDEFGHIJKL")
 
+# football-data.org — free tier: https://www.football-data.org/client/register
+FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4"
+FOOTBALL_DATA_COMPETITION = "WC"  # FIFA World Cup
+GROUP_STAGE_MATCHES = 3
+
+# Leaderboard auto-refresh interval (seconds); set 0 to disable
+LEADERBOARD_REFRESH_SECONDS = 60
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 TEAMS_FILE = DATA_DIR / "teams_2026.json"
 SQLITE_PATH = DATA_DIR / "pool.sqlite"

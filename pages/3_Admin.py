@@ -5,8 +5,11 @@ import streamlit as st
 from src.branding import apply_branding, brand_header
 from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, GROUPS, POOL_NAME
 from src.database import all_teams, dark_horse_teams, get_database, load_teams_data
+from src.export import entries_to_csv
 from src.models import Results
+from src.results_sync import sync_and_merge
 from src.scoring import results_are_set
+from src.secrets_helper import get_secret
 
 st.set_page_config(page_title=f"Admin | {POOL_NAME}", page_icon="🔒", layout="wide")
 apply_branding()
@@ -43,6 +46,34 @@ brand_header("Admin — Enter Results", "Save official outcomes to recalculate a
 if results_are_set(current):
     st.success(f"Results last saved: {current.updated_at.strftime('%Y-%m-%d %H:%M UTC') if current.updated_at else 'unknown'}")
 
+st.subheader("Live sync (football-data.org)")
+st.caption(
+    "Pulls finished match results and group standings automatically. "
+    "You still enter **dark horse** manually. Requires a free API key."
+)
+if get_secret("FOOTBALL_DATA_API_KEY"):
+    if st.button("Sync from API & recalculate scores", type="primary"):
+        try:
+            merged, report = sync_and_merge(current)
+            db.save_results(merged)
+            current = merged
+            for msg in report.messages:
+                st.info(msg)
+            if report.errors:
+                for err in report.errors:
+                    st.warning(err)
+            if report.ok():
+                st.success("Sync complete — leaderboard updated for everyone.")
+            st.rerun()
+        except ValueError as exc:
+            st.error(str(exc))
+else:
+    st.warning(
+        "Add `FOOTBALL_DATA_API_KEY` to Streamlit secrets to enable live sync. "
+        "Register free at https://www.football-data.org/client/register"
+    )
+
+st.divider()
 st.subheader("Knockout results")
 col1, col2 = st.columns(2)
 with col1:
@@ -116,9 +147,16 @@ if st.button("Save results & recalculate scores", type="primary"):
     st.rerun()
 
 st.divider()
-st.subheader("All entries")
+st.subheader("Export & entries")
 entries = db.list_entries()
 if entries:
+    csv_data = entries_to_csv(entries, db.get_results())
+    st.download_button(
+        "Download all picks (CSV)",
+        data=csv_data,
+        file_name="world_cup_pool_entries.csv",
+        mime="text/csv",
+    )
     for entry in entries:
         with st.expander(f"{entry.display_name} — {entry.total_points} pts"):
             st.json(entry.picks.to_dict())

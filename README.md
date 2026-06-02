@@ -8,7 +8,12 @@ A shareable Streamlit app for running a FIFA World Cup 2026 office pool. Partici
 - One entry per display name (case-insensitive)
 - Picks lock at first kickoff (June 11, 2026, 15:00 UTC)
 - Password-protected admin page to enter results and recalculate scores
+- **Live sync** from [football-data.org](https://www.football-data.org) (group winners, knockouts, Golden Boot, top-scoring team)
+- **Auto-refreshing leaderboard** during the tournament
+- **CSV export** of all entries and scores
+- Optional **office passcode** on the home page
 - SQLite for local development; Supabase for shared cloud deployment
+- IQVIA Digital branding
 
 ## Scoring
 
@@ -94,6 +99,8 @@ Push this repo to a GitHub repository.
 ADMIN_PASSWORD = "your-secret-password"
 SUPABASE_URL = "https://your-project.supabase.co"
 SUPABASE_KEY = "your-anon-key"
+FOOTBALL_DATA_API_KEY = "your-football-data-key"
+POOL_PASSCODE = "optional-office-passcode"
 ```
 
 4. Deploy and share the public URL with your office.
@@ -112,9 +119,29 @@ src/
   models.py             Data classes
   scoring.py            Point calculation
   validation.py         Pick validation and deadline lock
+  results_sync.py       Live results from football-data.org
+  export.py             CSV export
+  team_names.py         API team name → pool team mapping
 data/
   teams_2026.json       48 teams by group
+  team_name_aliases.json
 ```
+
+## Live updates (Phase 2)
+
+1. Register for a free API key at [football-data.org](https://www.football-data.org/client/register).
+2. Add `FOOTBALL_DATA_API_KEY` to Streamlit secrets (or `export` locally).
+3. During the tournament, open **Admin** → **Sync from API & recalculate scores**.
+
+The sync pulls:
+
+- Group winners (after all 3 group games finish in a group)
+- Semi-finalists, champion, and runner-up (from finished knockout matches)
+- Golden Boot leader’s country and highest-scoring team
+
+**Dark horse** is still entered manually (non-seed to reach quarters).
+
+Everyone sees updated standings on **Leaderboard** (enable **Auto-refresh live**, default every 60 seconds).
 
 ## Environment variables
 
@@ -123,5 +150,7 @@ data/
 | `ADMIN_PASSWORD` | Yes (Admin page) | Password for admin login |
 | `SUPABASE_URL` | Cloud deploy | Supabase project URL |
 | `SUPABASE_KEY` | Cloud deploy | Supabase anon/public key |
+| `FOOTBALL_DATA_API_KEY` | Live sync | Free key from football-data.org |
+| `POOL_PASSCODE` | Optional | Gate the pool for your office only |
 
 If Supabase credentials are not set, the app uses local SQLite automatically.
