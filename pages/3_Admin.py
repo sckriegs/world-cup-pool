@@ -2,8 +2,8 @@ import os
 
 import streamlit as st
 
-from src.config import BONUS_QUESTIONS, GROUPS, POOL_NAME
-from src.database import all_teams, get_database, load_teams_data
+from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, GROUPS, POOL_NAME
+from src.database import all_teams, dark_horse_teams, get_database, load_teams_data
 from src.models import Results
 from src.scoring import results_are_set
 
@@ -90,10 +90,15 @@ st.subheader("Bonus answers")
 bonus_results: dict[str, str] = {}
 for key, label in BONUS_QUESTIONS.items():
     default = current.bonuses.get(key, "")
+    if key == "dark_horse":
+        options = dark_horse_teams()
+        st.caption(DARK_HORSE_SEEDED_NOTE)
+    else:
+        options = teams
     bonus_results[key] = st.selectbox(
         label,
-        [""] + teams,
-        index=([""] + teams).index(default) if default in teams else 0,
+        [""] + options,
+        index=([""] + options).index(default) if default in options else 0,
         key=f"admin_bonus_{key}",
     )
 

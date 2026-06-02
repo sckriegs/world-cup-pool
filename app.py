@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import streamlit as st
 
-from src.config import POOL_NAME, PICK_DEADLINE, SCORING, BONUS_QUESTIONS
+from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, POOL_NAME, PICK_DEADLINE, SCORING
 from src.database import get_database
 from src.validation import normalize_name, validate_name
 
@@ -79,7 +79,10 @@ with col2:
 st.divider()
 st.subheader("Bonus questions")
 for key, label in BONUS_QUESTIONS.items():
-    st.markdown(f"- **{label}**")
+    if key == "dark_horse":
+        st.markdown(f"- **{label}** — {DARK_HORSE_SEEDED_NOTE}")
+    else:
+        st.markdown(f"- **{label}**")
 
 st.divider()
 entry_count = len(get_database().list_entries())

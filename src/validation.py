@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from src.config import BONUS_QUESTIONS, GROUPS, PICK_DEADLINE
+from src.config import BONUS_QUESTIONS, GROUPS, PICK_DEADLINE, SEEDED_TEAMS
 
 
 def picks_are_locked() -> bool:
@@ -53,5 +53,9 @@ def validate_picks(
     for key in BONUS_QUESTIONS:
         if not bonuses.get(key):
             errors.append(f"Answer the bonus question: {BONUS_QUESTIONS[key]}.")
+
+    dark_horse = bonuses.get("dark_horse", "")
+    if dark_horse and dark_horse in SEEDED_TEAMS:
+        errors.append("Dark horse must be a non-seeded team.")
 
     return errors

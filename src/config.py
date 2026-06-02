@@ -20,6 +20,26 @@ BONUS_QUESTIONS = {
     "dark_horse": "Dark horse (non-seed to reach quarter-finals)",
 }
 
+# FIFA pot-1 style seeds for the dark horse bonus (excluded from that pick only)
+SEEDED_TEAMS = frozenset(
+    {
+        "Spain",
+        "Argentina",
+        "France",
+        "England",
+        "Brazil",
+        "Portugal",
+        "Netherlands",
+        "Belgium",
+        "Germany",
+    }
+)
+
+DARK_HORSE_SEEDED_NOTE = (
+    "Seeded teams (not eligible): Spain, Argentina, France, England, Brazil, "
+    "Portugal, Netherlands, Belgium, and Germany."
+)
+
 GROUPS = list("ABCDEFGHIJKL")
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"

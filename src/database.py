@@ -6,7 +6,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.config import GROUPS, SQLITE_PATH, TEAMS_FILE
+from src.config import GROUPS, SEEDED_TEAMS, SQLITE_PATH, TEAMS_FILE
 from src.models import Entry, Picks, Results
 from src.scoring import calculate_points
 
@@ -22,6 +22,10 @@ def all_teams() -> list[str]:
     for group in GROUPS:
         teams.extend(data["groups"][group])
     return sorted(set(teams))
+
+
+def dark_horse_teams() -> list[str]:
+    return sorted(t for t in all_teams() if t not in SEEDED_TEAMS)
 
 
 def _now_iso() -> str:
