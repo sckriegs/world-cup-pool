@@ -160,6 +160,25 @@ if entries:
     for entry in entries:
         with st.expander(f"{entry.display_name} — {entry.total_points} pts"):
             st.json(entry.picks.to_dict())
+            confirm_key = f"confirm_delete_{entry.id}"
+            if st.session_state.get(confirm_key):
+                st.warning(f"Permanently delete **{entry.display_name}**? This cannot be undone.")
+                yes_col, no_col = st.columns(2)
+                with yes_col:
+                    if st.button("Yes, delete entry", type="primary", key=f"delete_yes_{entry.id}"):
+                        if db.delete_entry(entry.id):
+                            st.session_state.pop(confirm_key, None)
+                            st.success(f"Deleted entry for {entry.display_name}.")
+                            st.rerun()
+                        else:
+                            st.error("Could not delete entry. Check database permissions.")
+                with no_col:
+                    if st.button("Cancel", key=f"delete_no_{entry.id}"):
+                        st.session_state.pop(confirm_key, None)
+                        st.rerun()
+            elif st.button("Delete entry", key=f"delete_{entry.id}"):
+                st.session_state[confirm_key] = True
+                st.rerun()
 else:
     st.info("No entries yet.")
 

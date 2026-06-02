@@ -81,7 +81,10 @@ CREATE POLICY "Allow public update entries" ON entries FOR UPDATE USING (true);
 
 CREATE POLICY "Allow public read results" ON results FOR SELECT USING (true);
 CREATE POLICY "Allow public upsert results" ON results FOR ALL USING (true);
+CREATE POLICY "Allow public delete entries" ON entries FOR DELETE USING (true);
 ```
+
+If you already created the database, run only the delete policy line in the SQL Editor.
 
 3. Copy your project URL and anon/public API key from **Project Settings → API**.
 

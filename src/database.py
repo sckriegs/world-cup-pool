@@ -51,6 +51,9 @@ class Database:
     def update_entry_points(self, entry_id: int | str, total_points: int) -> None:
         raise NotImplementedError
 
+    def delete_entry(self, entry_id: int | str) -> bool:
+        raise NotImplementedError
+
     def get_results(self) -> Results:
         raise NotImplementedError
 
@@ -183,6 +186,12 @@ class SQLiteDatabase(Database):
             )
             conn.commit()
 
+    def delete_entry(self, entry_id: int | str) -> bool:
+        with self._connect() as conn:
+            cursor = conn.execute("DELETE FROM entries WHERE id = ?", (entry_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
     def get_results(self) -> Results:
         with self._connect() as conn:
             row = conn.execute("SELECT data, updated_at FROM results WHERE id = 1").fetchone()
@@ -287,6 +296,10 @@ class SupabaseDatabase(Database):
 
     def update_entry_points(self, entry_id: int | str, total_points: int) -> None:
         self.client.table("entries").update({"total_points": total_points}).eq("id", entry_id).execute()
+
+    def delete_entry(self, entry_id: int | str) -> bool:
+        response = self.client.table("entries").delete().eq("id", entry_id).execute()
+        return bool(response.data)
 
     def get_results(self) -> Results:
         response = self.client.table("results").select("*").eq("id", 1).limit(1).execute()
