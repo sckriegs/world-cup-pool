@@ -42,9 +42,14 @@ def validate_picks(
     if len(set(semi_set)) < len(semi_set):
         errors.append("Semi-finalist picks must be distinct teams.")
 
-    all_knockout = [champion, runner_up, *semi_set]
-    if len(set(all_knockout)) != len(all_knockout):
-        errors.append("Champion, runner-up, and semi-finalists must all be different teams.")
+    if champion and runner_up and champion == runner_up:
+        errors.append("Champion and runner-up must be different teams.")
+
+    if len(semi_set) == 4:
+        if champion and champion not in semi_set:
+            errors.append("Champion must be one of your four semi-finalist picks.")
+        if runner_up and runner_up not in semi_set:
+            errors.append("Runner-up must be one of your four semi-finalist picks.")
 
     for group in GROUPS:
         if not group_winners.get(group):
