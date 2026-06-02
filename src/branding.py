@@ -31,7 +31,7 @@ BRAND_CSS = f"""
         color: {INDIGO} !important;
         font-weight: 700 !important;
     }}
-    p, label, .stMarkdown, span {{
+    .main p, .main label, .main .stMarkdown {{
         color: {INDIGO};
     }}
     [data-testid="stCaptionContainer"] {{
@@ -49,19 +49,41 @@ BRAND_CSS = f"""
     div[data-testid="stMetric"] [data-testid="stMetricValue"] {{
         color: {INDIGO} !important;
     }}
-    .stButton > button[kind="primary"] {{
+    .stButton > button,
+    .stButton > button[kind="primary"],
+    button[data-testid="baseButton-primary"] {{
         background-color: {INDIGO} !important;
         color: {WHITE} !important;
-        border: none !important;
+        border: 1px solid {INDIGO} !important;
         font-weight: 600 !important;
     }}
-    .stButton > button[kind="primary"]:hover {{
+    .stButton > button p,
+    .stButton > button span,
+    .stButton > button div,
+    .stButton > button [data-testid="stMarkdownContainer"],
+    button[data-testid="baseButton-primary"] p,
+    button[data-testid="baseButton-primary"] span {{
+        color: {WHITE} !important;
+    }}
+    .stButton > button:hover {{
         background-color: #1f1458 !important;
-        border-left: 3px solid {BRIGHT_TEAL} !important;
+        border-color: #1f1458 !important;
+        color: {WHITE} !important;
+    }}
+    .stButton > button:hover p,
+    .stButton > button:hover span,
+    .stButton > button:hover div {{
+        color: {WHITE} !important;
     }}
     .stButton > button[kind="secondary"] {{
+        background-color: {WHITE} !important;
         color: {INDIGO} !important;
-        border-color: {INDIGO} !important;
+        border: 1px solid {INDIGO} !important;
+    }}
+    .stButton > button[kind="secondary"] p,
+    .stButton > button[kind="secondary"] span,
+    .stButton > button[kind="secondary"] div {{
+        color: {INDIGO} !important;
     }}
     [data-baseweb="tab-highlight"] {{
         background-color: {BRIGHT_TEAL} !important;
