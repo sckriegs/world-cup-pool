@@ -1,10 +1,12 @@
 import streamlit as st
 
+from src.branding import apply_branding, brand_header
 from src.config import POOL_NAME
 from src.database import get_database
 from src.scoring import calculate_points, results_are_set
 
 st.set_page_config(page_title=f"Leaderboard | {POOL_NAME}", page_icon="⚽", layout="wide")
+apply_branding()
 
 db = get_database()
 entries = db.list_entries()
@@ -12,7 +14,7 @@ results = db.get_results()
 scored = results_are_set(results)
 current_name = st.session_state.get("display_name", "")
 
-st.title("Leaderboard")
+brand_header("Leaderboard")
 
 if not entries:
     st.info("No entries yet. Be the first to submit picks!")

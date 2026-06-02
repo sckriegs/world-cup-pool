@@ -1,11 +1,13 @@
 import streamlit as st
 
+from src.branding import apply_branding, brand_header
 from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, GROUPS, POOL_NAME
 from src.database import all_teams, dark_horse_teams, get_database, load_teams_data
 from src.models import Picks
 from src.validation import picks_are_locked, validate_picks
 
 st.set_page_config(page_title=f"Make Picks | {POOL_NAME}", page_icon="⚽", layout="wide")
+apply_branding()
 
 if "display_name" not in st.session_state or not st.session_state.display_name:
     st.warning("Enter your name on the Home page first.")
@@ -19,8 +21,7 @@ teams_data = load_teams_data()
 existing = db.get_entry_by_name(display_name)
 current = existing.picks if existing else Picks()
 
-st.title("Make Your Picks")
-st.caption(f"Entry for **{display_name}**")
+brand_header("Make Your Picks", f"Entry for {display_name}")
 
 if picks_are_locked():
     st.error("Picks are locked. You can view your submitted picks below but cannot change them.")

@@ -2,12 +2,14 @@ import os
 
 import streamlit as st
 
+from src.branding import apply_branding, brand_header
 from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, GROUPS, POOL_NAME
 from src.database import all_teams, dark_horse_teams, get_database, load_teams_data
 from src.models import Results
 from src.scoring import results_are_set
 
 st.set_page_config(page_title=f"Admin | {POOL_NAME}", page_icon="🔒", layout="wide")
+apply_branding()
 
 admin_password = os.environ.get("ADMIN_PASSWORD")
 if hasattr(st, "secrets"):
@@ -21,7 +23,7 @@ if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
 if not st.session_state.admin_authenticated:
-    st.title("Admin Login")
+    brand_header("Admin Login", "Enter your admin password to enter results.")
     password = st.text_input("Password", type="password")
     if st.button("Log in"):
         if password == admin_password:
@@ -36,8 +38,7 @@ teams = all_teams()
 teams_data = load_teams_data()
 current = db.get_results()
 
-st.title("Admin — Enter Results")
-st.caption("Save official outcomes to recalculate all entry scores.")
+brand_header("Admin — Enter Results", "Save official outcomes to recalculate all entry scores.")
 
 if results_are_set(current):
     st.success(f"Results last saved: {current.updated_at.strftime('%Y-%m-%d %H:%M UTC') if current.updated_at else 'unknown'}")

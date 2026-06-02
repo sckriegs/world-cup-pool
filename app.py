@@ -2,11 +2,13 @@ from datetime import datetime, timezone
 
 import streamlit as st
 
+from src.branding import apply_branding, brand_header
 from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, POOL_NAME, PICK_DEADLINE, SCORING
 from src.database import get_database
 from src.validation import normalize_name, validate_name
 
 st.set_page_config(page_title=POOL_NAME, page_icon="⚽", layout="wide")
+apply_branding()
 
 if "display_name" not in st.session_state:
     st.session_state.display_name = ""
@@ -23,8 +25,7 @@ def deadline_message() -> str:
     return f"Picks close in **{days}d {hours}h {minutes}m** (first kickoff: June 11, 2026)."
 
 
-st.title(f"⚽ {POOL_NAME}")
-st.caption(deadline_message())
+brand_header(POOL_NAME, deadline_message().replace("**", ""))
 
 st.markdown(
     """
