@@ -13,7 +13,7 @@ require_pool_access()
 
 if "display_name" not in st.session_state or not st.session_state.display_name:
     st.warning("Enter your name on the Home page first.")
-    st.page_link("app.py", label="Go to Home", icon="🏠")
+    st.page_link("pages/0_Home.py", label="Go to Home", icon="🏠")
     st.stop()
 
 display_name = st.session_state.display_name

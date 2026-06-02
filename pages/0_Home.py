@@ -1,0 +1,106 @@
+from datetime import datetime, timezone
+
+import streamlit as st
+
+from src.branding import apply_branding, brand_header
+from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, POOL_NAME, PICK_DEADLINE, SCORING
+from src.database import get_database
+from src.secrets_helper import get_secret
+from src.validation import normalize_name, validate_name
+
+st.set_page_config(page_title=POOL_NAME, page_icon="⚽", layout="wide")
+apply_branding()
+
+if "display_name" not in st.session_state:
+    st.session_state.display_name = ""
+
+if "pool_unlocked" not in st.session_state:
+    st.session_state.pool_unlocked = False
+
+_pool_passcode = get_secret("POOL_PASSCODE")
+if _pool_passcode and not st.session_state.pool_unlocked:
+    brand_header(POOL_NAME, "Enter the office pool passcode to continue.")
+    pass_input = st.text_input("Pool passcode", type="password")
+    if st.button("Enter pool", type="primary"):
+        if pass_input == _pool_passcode:
+            st.session_state.pool_unlocked = True
+            st.rerun()
+        else:
+            st.error("Incorrect passcode.")
+    st.stop()
+
+
+def deadline_message() -> str:
+    now = datetime.now(timezone.utc)
+    if now >= PICK_DEADLINE:
+        return "Picks are locked — the tournament has started."
+    remaining = PICK_DEADLINE - now
+    days = remaining.days
+    hours, remainder = divmod(remaining.seconds, 3600)
+    minutes = remainder // 60
+    return f"Picks close in **{days}d {hours}h {minutes}m** (first kickoff: June 11, 2026)."
+
+
+brand_header(POOL_NAME, deadline_message().replace("**", ""))
+
+st.markdown(
+    """
+Welcome to the office pool! Enter your name below, then head to **Make Picks** to submit
+your predictions before the deadline.
+"""
+)
+
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.subheader("Join the pool")
+    name_input = st.text_input(
+        "Your display name",
+        value=st.session_state.display_name,
+        placeholder="e.g. Alex",
+        max_chars=50,
+    )
+
+    if st.button("Continue", type="primary"):
+        error = validate_name(name_input)
+        if error:
+            st.error(error)
+        else:
+            normalized = normalize_name(name_input)
+            st.session_state.display_name = normalized
+            db = get_database()
+            entry = db.get_entry_by_name(normalized)
+            if entry:
+                st.success(f"Welcome back, {normalized}! Your existing picks are saved.")
+            else:
+                st.success(f"Welcome, {normalized}! Head to Make Picks to submit your entry.")
+            st.rerun()
+
+    if st.session_state.display_name:
+        st.info(f"Signed in as **{st.session_state.display_name}**")
+
+with col2:
+    st.subheader("How scoring works")
+    st.markdown(
+        f"""
+| Pick | Points |
+|------|--------|
+| Champion | {SCORING['champion']} |
+| Runner-up | {SCORING['runner_up']} |
+| Each semi-finalist | {SCORING['semi_finalist']} |
+| Each group winner | {SCORING['group_winner']} |
+| Each bonus question | {SCORING['bonus']} |
+"""
+    )
+
+st.divider()
+st.subheader("Bonus questions")
+for key, label in BONUS_QUESTIONS.items():
+    if key == "dark_horse":
+        st.markdown(f"- **{label}** — {DARK_HORSE_SEEDED_NOTE}")
+    else:
+        st.markdown(f"- **{label}**")
+
+st.divider()
+entry_count = len(get_database().list_entries())
+st.metric("Entries submitted", entry_count)

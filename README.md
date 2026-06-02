@@ -111,8 +111,9 @@ POOL_PASSCODE = "optional-office-passcode"
 ## Project structure
 
 ```
-app.py                  Home page — join with display name
+app.py                  Navigation router (sidebar labels configured here)
 pages/
+  0_Home.py             Join with display name
   1_Make_Picks.py       Submit / edit picks
   2_Leaderboard.py      Rankings
   3_Admin.py            Enter results (password protected)
