@@ -166,12 +166,26 @@ if entries:
                 yes_col, no_col = st.columns(2)
                 with yes_col:
                     if st.button("Yes, delete entry", type="primary", key=f"delete_yes_{entry.id}"):
-                        if db.delete_entry(entry.id):
-                            st.session_state.pop(confirm_key, None)
-                            st.success(f"Deleted entry for {entry.display_name}.")
-                            st.rerun()
-                        else:
-                            st.error("Could not delete entry. Check database permissions.")
+                        try:
+                            get_database.clear()
+                            fresh_db = get_database()
+                            if not hasattr(fresh_db, "delete_entry"):
+                                st.error(
+                                    "Delete is not available on this deployment. "
+                                    "Reboot the app on Streamlit Cloud (Manage app → Reboot)."
+                                )
+                            elif fresh_db.delete_entry(entry.id):
+                                st.session_state.pop(confirm_key, None)
+                                st.success(f"Deleted entry for {entry.display_name}.")
+                                st.rerun()
+                            else:
+                                st.error(
+                                    "Could not delete entry. In Supabase SQL Editor, run: "
+                                    'CREATE POLICY "Allow public delete entries" ON entries '
+                                    "FOR DELETE USING (true);"
+                                )
+                        except Exception as exc:
+                            st.error(f"Delete failed: {exc}")
                 with no_col:
                     if st.button("Cancel", key=f"delete_no_{entry.id}"):
                         st.session_state.pop(confirm_key, None)

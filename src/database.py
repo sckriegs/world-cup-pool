@@ -298,8 +298,12 @@ class SupabaseDatabase(Database):
         self.client.table("entries").update({"total_points": total_points}).eq("id", entry_id).execute()
 
     def delete_entry(self, entry_id: int | str) -> bool:
-        response = self.client.table("entries").delete().eq("id", entry_id).execute()
-        return bool(response.data)
+        entry_id = int(entry_id)
+        self.client.table("entries").delete().eq("id", entry_id).execute()
+        remaining = (
+            self.client.table("entries").select("id").eq("id", entry_id).limit(1).execute()
+        )
+        return not remaining.data
 
     def get_results(self) -> Results:
         response = self.client.table("results").select("*").eq("id", 1).limit(1).execute()
