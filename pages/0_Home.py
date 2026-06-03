@@ -68,13 +68,7 @@ with col1:
         else:
             normalized = normalize_name(name_input)
             st.session_state.display_name = normalized
-            db = get_database()
-            entry = db.get_entry_by_name(normalized)
-            if entry:
-                st.success(f"Welcome back, {normalized}! Your existing picks are saved.")
-            else:
-                st.success(f"Welcome, {normalized}! Head to Make Picks to submit your entry.")
-            st.rerun()
+            st.switch_page("pages/1_Make_Picks.py")
 
     if st.session_state.display_name:
         st.info(f"Signed in as **{st.session_state.display_name}**")
