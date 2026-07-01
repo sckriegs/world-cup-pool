@@ -18,8 +18,8 @@ language = "python3"
 packageSearch = true
 guessImports = true
 
-run = "python3 -m streamlit run app.py --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableWebsocketCompression false"
+run = ["bash", "scripts/start_streamlit.sh"]
 
 [deployment]
-run = ["sh", "-c", "python3 -m streamlit run app.py --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableWebsocketCompression false"]
+run = ["bash", "scripts/start_streamlit.sh"]
 deploymentTarget = "autoscale"
