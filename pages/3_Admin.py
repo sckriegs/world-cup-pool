@@ -8,7 +8,7 @@ from src.database import all_teams, dark_horse_teams, get_database, load_teams_d
 from src.export import entries_to_csv
 from src.models import Results
 from src.results_sync import sync_and_merge
-from src.scoring import results_are_set
+from src.scoring import results_are_set, results_have_started
 from src.secrets_helper import get_secret
 
 st.set_page_config(page_title=f"Admin | {POOL_NAME}", page_icon="🔒", layout="wide")
@@ -44,12 +44,19 @@ current = db.get_results()
 brand_header("Admin — Enter Results", "Save official outcomes to recalculate all entry scores.")
 
 if results_are_set(current):
-    st.success(f"Results last saved: {current.updated_at.strftime('%Y-%m-%d %H:%M UTC') if current.updated_at else 'unknown'}")
+    st.success(f"Full results saved: {current.updated_at.strftime('%Y-%m-%d %H:%M UTC') if current.updated_at else 'unknown'}")
+elif results_have_started(current):
+    groups_done = sum(1 for w in current.group_winners.values() if w)
+    st.info(
+        f"Partial results in progress ({groups_done} group winners recorded). "
+        f"Last updated: {current.updated_at.strftime('%Y-%m-%d %H:%M UTC') if current.updated_at else 'unknown'}"
+    )
 
 st.subheader("Live sync (football-data.org)")
 st.caption(
-    "Pulls finished match results and group standings automatically. "
-    "You still enter **dark horse** manually. Requires a free API key."
+    "Pulls the latest finished matches and group standings, then recalculates everyone's points. "
+    "Group-winner points appear as each group finishes; knockouts update as those rounds complete. "
+    "You still enter **dark horse** manually."
 )
 if get_secret("FOOTBALL_DATA_API_KEY"):
     if st.button("Sync from API & recalculate scores", type="primary"):

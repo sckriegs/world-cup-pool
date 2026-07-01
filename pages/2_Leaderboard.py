@@ -6,7 +6,7 @@ from src.access import require_pool_access
 from src.branding import apply_branding, brand_header
 from src.config import LEADERBOARD_REFRESH_SECONDS, POOL_NAME
 from src.database import get_database
-from src.scoring import calculate_points, results_are_set
+from src.scoring import calculate_points, results_have_started
 
 st.set_page_config(page_title=f"Leaderboard | {POOL_NAME}", page_icon="⚽", layout="wide")
 apply_branding()
@@ -17,7 +17,7 @@ def render_leaderboard() -> None:
     db = get_database()
     entries = db.list_entries()
     results = db.get_results()
-    scored = results_are_set(results)
+    scored = results_have_started(results)
     current_name = st.session_state.get("display_name", "")
 
     if not entries:
@@ -26,20 +26,31 @@ def render_leaderboard() -> None:
 
     if not scored:
         st.warning(
-            "Results haven't been entered yet. Standings update when the admin saves or syncs results."
+            "No results yet. Points appear as the admin syncs or enters outcomes during the tournament."
         )
 
     rows = []
     for rank, entry in enumerate(
-        sorted(entries, key=lambda e: (-e.total_points, e.created_at or e.updated_at)),
+        sorted(
+            entries,
+            key=lambda e: (
+                -(
+                    calculate_points(e.picks, results)["total"]
+                    if scored
+                    else e.total_points
+                ),
+                e.created_at or e.updated_at,
+            ),
+        ),
         start=1,
     ):
         breakdown = calculate_points(entry.picks, results) if scored else {}
+        total = breakdown.get("total", entry.total_points) if scored else entry.total_points
         rows.append(
             {
                 "Rank": rank,
                 "Name": entry.display_name,
-                "Total": breakdown.get("total", entry.total_points) if scored else "—",
+                "Total": total if scored else "—",
                 "Champion": breakdown.get("champion", 0) if scored else "—",
                 "Runner-up": breakdown.get("runner_up", 0) if scored else "—",
                 "Semis": breakdown.get("semi_finalists", 0) if scored else "—",
