@@ -38,6 +38,16 @@ def _parse_dt(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def _parse_results_payload(raw: object) -> dict:
+    """Normalize results JSON from SQLite text or Supabase JSONB."""
+    data = raw
+    if isinstance(data, str):
+        data = json.loads(data)
+    if isinstance(data, str):
+        data = json.loads(data)
+    return data if isinstance(data, dict) else {}
+
+
 class Database:
     def get_entry_by_name(self, display_name: str) -> Entry | None:
         raise NotImplementedError
@@ -197,8 +207,7 @@ class SQLiteDatabase(Database):
             row = conn.execute("SELECT data, updated_at FROM results WHERE id = 1").fetchone()
         if not row:
             return Results()
-        data = json.loads(row["data"])
-        results = Results.from_dict(data)
+        results = Results.from_dict(_parse_results_payload(row["data"]))
         results.updated_at = _parse_dt(row["updated_at"])
         return results
 
@@ -310,8 +319,7 @@ class SupabaseDatabase(Database):
         if not response.data:
             return Results()
         row = response.data[0]
-        data = row["data"] if isinstance(row["data"], dict) else json.loads(row["data"])
-        results = Results.from_dict(data)
+        results = Results.from_dict(_parse_results_payload(row.get("data")))
         results.updated_at = _parse_dt(row.get("updated_at"))
         return results
 
@@ -329,8 +337,7 @@ class SupabaseDatabase(Database):
             self.update_entry_points(entry.id, points)
 
 
-@st.cache_resource
-def get_database() -> Database:
+def _resolve_supabase_credentials() -> tuple[str | None, str | None]:
     supabase_url = os.environ.get("SUPABASE_URL")
     supabase_key = os.environ.get("SUPABASE_KEY")
 
@@ -338,6 +345,20 @@ def get_database() -> Database:
         supabase_url = supabase_url or st.secrets.get("SUPABASE_URL")
         supabase_key = supabase_key or st.secrets.get("SUPABASE_KEY")
 
+    return supabase_url, supabase_key
+
+
+@st.cache_resource
+def _get_cached_database(supabase_url: str, supabase_key: str) -> Database:
     if supabase_url and supabase_key:
         return SupabaseDatabase(supabase_url, supabase_key)
     return SQLiteDatabase()
+
+
+def get_database() -> Database:
+    url, key = _resolve_supabase_credentials()
+    return _get_cached_database(url or "", key or "")
+
+
+def clear_database_cache() -> None:
+    _get_cached_database.clear()

@@ -1,0 +1,25 @@
+modules = ["python"]
+
+entrypoint = "app.py"
+
+[nix]
+channel = "stable-24_05"
+
+[env]
+PIP_BREAK_SYSTEM_PACKAGES = "1"
+PIP_USER = "1"
+PIP_CONFIG_FILE = "pip.conf"
+PATH = "/home/runner/.local/bin:/home/runner/workspace/.local/bin:${PATH}"
+
+[packager]
+language = "python3"
+
+[packager.features]
+packageSearch = true
+guessImports = true
+
+run = "python3 -m streamlit run app.py --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableWebsocketCompression false"
+
+[deployment]
+run = ["sh", "-c", "python3 -m streamlit run app.py --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableWebsocketCompression false"]
+deploymentTarget = "autoscale"

@@ -4,7 +4,7 @@ import streamlit as st
 
 from src.branding import apply_branding, brand_header
 from src.config import BONUS_QUESTIONS, DARK_HORSE_SEEDED_NOTE, GROUPS, POOL_NAME
-from src.database import all_teams, dark_horse_teams, get_database, load_teams_data
+from src.database import all_teams, clear_database_cache, dark_horse_teams, get_database, load_teams_data
 from src.export import entries_to_csv
 from src.models import Results
 from src.results_sync import sync_and_merge
@@ -61,7 +61,7 @@ st.caption(
 if get_secret("FOOTBALL_DATA_API_KEY"):
     if st.button("Sync latest results & recalculate scores", type="primary"):
         try:
-            get_database.clear()
+            clear_database_cache()
             fresh_db = get_database()
             merged, report = sync_and_merge(current)
             fresh_db.save_results(merged)
