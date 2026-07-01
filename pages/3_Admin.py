@@ -8,7 +8,7 @@ from src.database import all_teams, dark_horse_teams, get_database, load_teams_d
 from src.export import entries_to_csv
 from src.models import Results
 from src.results_sync import sync_and_merge
-from src.scoring import results_are_set, results_have_started
+from src.scoring import has_scoring_data, results_are_set
 from src.secrets_helper import get_secret
 
 st.set_page_config(page_title=f"Admin | {POOL_NAME}", page_icon="🔒", layout="wide")
@@ -43,34 +43,36 @@ current = db.get_results()
 
 brand_header("Admin — Enter Results", "Save official outcomes to recalculate all entry scores.")
 
-if results_are_set(current):
-    st.success(f"Full results saved: {current.updated_at.strftime('%Y-%m-%d %H:%M UTC') if current.updated_at else 'unknown'}")
-elif results_have_started(current):
-    groups_done = sum(1 for w in current.group_winners.values() if w)
-    st.info(
-        f"Partial results in progress ({groups_done} group winners recorded). "
-        f"Last updated: {current.updated_at.strftime('%Y-%m-%d %H:%M UTC') if current.updated_at else 'unknown'}"
+if has_scoring_data(current):
+    updated = current.updated_at.strftime("%Y-%m-%d %H:%M UTC") if current.updated_at else "unknown"
+    groups_set = sum(1 for g in GROUPS if current.group_winners.get(g))
+    st.success(
+        f"Results last saved: {updated} — "
+        f"{groups_set}/12 group winners, "
+        f"{'final decided' if results_are_set(current) else 'knockouts in progress'}"
     )
 
 st.subheader("Live sync (football-data.org)")
 st.caption(
-    "Pulls the latest finished matches and group standings, then recalculates everyone's points. "
-    "Group-winner points appear as each group finishes; knockouts update as those rounds complete. "
-    "You still enter **dark horse** manually."
+    "Click below to pull the latest finished matches and recalculate everyone's points. "
+    "Group points appear as each group completes; knockout points as those rounds finish. "
+    "Enter **dark horse** manually below."
 )
 if get_secret("FOOTBALL_DATA_API_KEY"):
-    if st.button("Sync from API & recalculate scores", type="primary"):
+    if st.button("Sync latest results & recalculate scores", type="primary"):
         try:
+            get_database.clear()
+            fresh_db = get_database()
             merged, report = sync_and_merge(current)
-            db.save_results(merged)
+            fresh_db.save_results(merged)
             current = merged
             for msg in report.messages:
                 st.info(msg)
             if report.errors:
                 for err in report.errors:
                     st.warning(err)
-            if report.ok():
-                st.success("Sync complete — leaderboard updated for everyone.")
+            if report.ok() and has_scoring_data(merged):
+                st.success("Scores updated — check the Leaderboard.")
             st.rerun()
         except ValueError as exc:
             st.error(str(exc))

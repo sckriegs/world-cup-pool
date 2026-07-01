@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 
 from src.config import GROUPS, GROUP_STAGE_MATCHES, FOOTBALL_DATA_BASE_URL, FOOTBALL_DATA_COMPETITION
 from src.models import Results
+from src.scoring import has_scoring_data
 from src.secrets_helper import get_secret
 from src.team_names import resolve_team_name
 
@@ -54,12 +55,6 @@ def _group_letter(group_field: str) -> str | None:
     return letter if letter in GROUPS else None
 
 
-def _group_is_complete(table: list[dict]) -> bool:
-    if len(table) != 4:
-        return False
-    return all(row.get("playedGames", 0) >= GROUP_STAGE_MATCHES for row in table)
-
-
 def _parse_group_winners(standings_payload: dict, report: SyncReport) -> dict[str, str]:
     winners: dict[str, str] = {}
     for block in standings_payload.get("standings", []):
@@ -69,11 +64,9 @@ def _parse_group_winners(standings_payload: dict, report: SyncReport) -> dict[st
         table = block.get("table", [])
         if not table:
             continue
-        if not _group_is_complete(table):
-            played = [row.get("playedGames", 0) for row in table]
-            report.messages.append(
-                f"Group {group}: in progress ({max(played)}/{GROUP_STAGE_MATCHES} games played)."
-            )
+        played = [row.get("playedGames", 0) for row in table]
+        if not played or max(played) < GROUP_STAGE_MATCHES:
+            report.messages.append(f"Group {group}: still in progress (waiting for all {GROUP_STAGE_MATCHES} games).")
             continue
         leader = next((row for row in table if row.get("position") == 1), table[0])
         team_info = leader.get("team", {})
@@ -92,8 +85,12 @@ def _team_from_match_side(side: dict) -> str | None:
     return resolve_team_name(team.get("name") or team.get("shortName") or "")
 
 
-def _normalize_stage(stage: str) -> str:
-    return (stage or "").upper().replace("-", "_").replace(" ", "_")
+def _is_semi_final_stage(stage: str) -> bool:
+    return "SEMI" in stage
+
+
+def _is_tournament_final_stage(stage: str) -> bool:
+    return stage == "FINAL"
 
 
 def _parse_knockouts(matches_payload: dict, report: SyncReport) -> tuple[str, str, list[str]]:
@@ -105,7 +102,7 @@ def _parse_knockouts(matches_payload: dict, report: SyncReport) -> tuple[str, st
     for match in matches:
         if match.get("status") != "FINISHED":
             continue
-        stage = _normalize_stage(match.get("stage") or "")
+        stage = (match.get("stage") or "").upper()
         home = match.get("score", {}).get("fullTime", {}).get("home")
         away = match.get("score", {}).get("fullTime", {}).get("away")
         if home is None or away is None:
@@ -114,12 +111,12 @@ def _parse_knockouts(matches_payload: dict, report: SyncReport) -> tuple[str, st
         home_team = _team_from_match_side(match.get("homeTeam", {}))
         away_team = _team_from_match_side(match.get("awayTeam", {}))
 
-        if stage == "SEMI_FINALS" and home_team and away_team:
+        if _is_semi_final_stage(stage) and home_team and away_team:
             for t in (home_team, away_team):
                 if t not in semi_teams:
                     semi_teams.append(t)
 
-        if stage == "FINAL" and home_team and away_team:
+        if _is_tournament_final_stage(stage) and home_team and away_team:
             if home > away:
                 champion, runner_up = home_team, away_team
             else:
@@ -184,16 +181,20 @@ def fetch_results_from_api() -> tuple[Results, SyncReport]:
     comp_path = f"/competitions/{FOOTBALL_DATA_COMPETITION}"
 
     standings = _fetch(f"{comp_path}/standings")
-    matches = _fetch(f"{comp_path}/matches")
+    # Fetch all matches (API may paginate; filter finished client-side).
+    matches_payload = _fetch(f"{comp_path}/matches")
+    finished_matches = {
+        "matches": [m for m in matches_payload.get("matches", []) if m.get("status") == "FINISHED"],
+    }
 
     group_winners = _parse_group_winners(standings, report)
-    champion, runner_up, semi_teams = _parse_knockouts(matches, report)
+    champion, runner_up, semi_teams = _parse_knockouts(finished_matches, report)
 
     while len(semi_teams) < 4:
         semi_teams.append("")
 
     bonuses = _parse_top_scorer_bonuses(comp_path, report)
-    high_scorer = _parse_highest_scoring_team(matches, report)
+    high_scorer = _parse_highest_scoring_team(finished_matches, report)
     if high_scorer:
         bonuses["highest_scoring_team"] = high_scorer
 
@@ -241,14 +242,10 @@ def merge_results(existing: Results, fetched: Results) -> Results:
 def sync_and_merge(existing: Results) -> tuple[Results, SyncReport]:
     fetched, report = fetch_results_from_api()
     merged = merge_results(existing, fetched)
-    if not any(
-        [
-            merged.champion,
-            merged.runner_up,
-            any(s for s in merged.semi_finalists if s),
-            any(merged.group_winners.values()),
-            any(merged.bonuses.values()),
-        ]
-    ):
+    if not has_scoring_data(merged):
         report.errors.append("No results available from the API yet (tournament may not have started).")
+    elif not merged.champion:
+        report.messages.append(
+            "Partial results synced — group and knockout points update as outcomes are confirmed."
+        )
     return merged, report

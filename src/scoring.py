@@ -37,19 +37,17 @@ def calculate_points(picks: Picks, results: Results) -> dict[str, int]:
     return breakdown
 
 
+def has_scoring_data(results: Results) -> bool:
+    """True if any official results exist (partial or complete)."""
+    return bool(
+        results.champion
+        or results.runner_up
+        or any(results.semi_finalists)
+        or any(results.group_winners.values())
+        or any(results.bonuses.values())
+    )
+
+
 def results_are_set(results: Results) -> bool:
-    """True if the tournament is complete enough to rank champion picks."""
+    """True if the tournament winner and runner-up are known."""
     return bool(results.champion and results.runner_up)
-
-
-def results_have_started(results: Results) -> bool:
-    """True if any official results exist (group stage, knockouts, or bonuses)."""
-    if results.champion or results.runner_up:
-        return True
-    if any(s for s in results.semi_finalists if s):
-        return True
-    if any(results.group_winners.values()):
-        return True
-    if any(results.bonuses.values()):
-        return True
-    return False
