@@ -77,7 +77,7 @@ def render_leaderboard() -> None:
             }
         )
 
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+    st.table(rows)
 
     if current_name:
         match = next((r for r in rows if r["Name"].lower() == current_name.lower()), None)
