@@ -22,6 +22,6 @@ guessImports = true
 run = ["bash", "scripts/start_streamlit.sh"]
 
 [deployment]
-build = ["bash", "-c", "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"]
+build = ["bash", "-c", "python3 -m venv .venv && PIP_USER=0 PIP_CONFIG_FILE= .venv/bin/pip install -r requirements.txt"]
 run = ["bash", "scripts/start_streamlit.sh"]
 deploymentTarget = "autoscale"
